@@ -39,3 +39,24 @@ Route::prefix('dokumen')->group(function ($router) {
     // Route::get('/download', [DokumenController::class, 'downloadFile']); // path traversal validation
     Route::get('/download', [DokumenController::class, 'download']); // path traversal vulnerable
 });
+
+
+Route::group(['middleware' => 'auth:sanctum'], function ($router) {
+    // Access Control List (attr based)
+    Route::get('/dashboard', function () {
+        return 'API ini hanya bisa diakses oleh role admin';
+    })->middleware(['auth:sanctum', 'role:admin']);
+
+    // ACL (list based)
+    Route::group(['middleware' => 'permission:create-barang'], function () {
+        Route::post('/tambah-barang', [BarangController::class, 'tambah']);
+    });
+
+    Route::group(['middleware' => 'permission:edit-barang'], function () {
+        Route::post('/edit-barang/{id}', [BarangController::class, 'edit']);
+    });
+
+    Route::group(['middleware' => 'permission:delete-barang'], function () {
+        Route::post('/hapus-barang/{id}', [BarangController::class, 'hapus']);
+    });
+});

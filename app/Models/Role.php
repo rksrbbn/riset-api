@@ -5,10 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BarangModel extends Model
+class Role extends Model
 {
     use HasFactory;
-    protected $table = 'barang';
+    protected $table = 'roles';
     protected $guarded = [];
-    public $timestamps = false;
+
+    public function permissions()
+    {
+        return $this->belongsToMany(Permission::class);
+    }
+
 }
