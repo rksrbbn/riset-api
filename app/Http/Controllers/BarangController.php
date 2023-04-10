@@ -107,7 +107,7 @@ class BarangController extends Controller
         $user = $request->user();
         
         $barang = BarangModel::where('id', $id);
-        $dataSebelum = clone $barang;
+        $dataSebelum = clone $barang->first();
         $hapus = $barang->delete();
 
         $paramsLog = array(
@@ -117,7 +117,7 @@ class BarangController extends Controller
             'ip_address' => $request->ip(),
             'nama_aktivitas' => 'menghapus data barang',
             'keterangan' => 'user menghapus data barang',
-            'data_sebelum' => $dataSebelum->first(),
+            'data_sebelum' => $dataSebelum,
             'data_sesudah' => null,
             'date_time' => Carbon::now()->setTimezone('Asia/Jakarta'),
             'browser' => $request->header('User-Agent')
