@@ -42,6 +42,7 @@ Route::prefix('dokumen')->group(function ($router) {
 
 
 Route::group(['middleware' => 'auth:sanctum'], function ($router) {
+
     // Access Control List (attr based)
     Route::get('/dashboard', function () {
         return 'API ini hanya bisa diakses oleh role admin';
@@ -59,4 +60,5 @@ Route::group(['middleware' => 'auth:sanctum'], function ($router) {
     Route::group(['middleware' => 'permission:delete-barang'], function () {
         Route::post('/hapus-barang/{id}', [BarangController::class, 'hapus']);
     });
+    
 });
