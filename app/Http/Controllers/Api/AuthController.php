@@ -51,6 +51,7 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('access_token');
+        // dd($token);
         return response()->json([
             'token' => $token->plainTextToken
         ]);

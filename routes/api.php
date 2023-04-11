@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BarangController;
 use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\testController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,10 +24,6 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['middleware' => 'auth:sanctum'], function ($router) {
-    Route::post('/barang', [BarangController::class, 'getBarang']);
-});
-
 Route::prefix('auth')->group(function ($router) {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [RegisteredUserController::class, 'store']);
@@ -36,12 +33,14 @@ Route::prefix('auth')->group(function ($router) {
 // File
 Route::prefix('dokumen')->group(function ($router) {
     Route::post('/simpan', [DokumenController::class, 'simpan']); // contoh enkripsi file
-    // Route::get('/download', [DokumenController::class, 'downloadFile']); // path traversal validation
-    Route::get('/download', [DokumenController::class, 'download']); // path traversal vulnerable
+    Route::get('/download', [DokumenController::class, 'downloadFile']); // path traversal validation
+    // Route::get('/download', [DokumenController::class, 'download']); // path traversal vulnerable
 });
 
 
-Route::group(['middleware' => 'auth:sanctum'], function ($router) {
+Route::group(['middleware' => ['auth:sanctum']], function ($router) {
+
+    Route::get('/barang', [BarangController::class, 'getBarang']);
 
     // Access Control List (attr based)
     Route::get('/dashboard', function () {
@@ -61,4 +60,16 @@ Route::group(['middleware' => 'auth:sanctum'], function ($router) {
         Route::post('/hapus-barang/{id}', [BarangController::class, 'hapus']);
     });
     
+});
+
+// API third-party
+Route::get('/riwayat-transaksi', [testController::class, 'getTransaksi']);
+// Route::post('/tambah-transaksi', [testController::class, 'tambahTransaksi']);
+
+// XSS example
+Route::post('/input-test', [testController::class, 'testInput']);
+
+
+// Last activity middleware
+Route::group(['middleware' => ['checkLastActivity']], function () {
 });
