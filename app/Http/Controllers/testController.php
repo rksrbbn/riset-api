@@ -150,7 +150,7 @@ class testController extends Controller
             'params' => $encryptedParam
         );
         // $postData = $param;
-        // dd($postData);
+        // dd($encryptedParam);
         
         $data = $this->curl_post_request(env('THIRD_API_URL', 'http://localhost:8080/api/') . 'tambah-transaksi', $postData);
         $status = $data['code'];
