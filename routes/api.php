@@ -67,9 +67,11 @@ Route::get('/riwayat-transaksi', [testController::class, 'getTransaksi']);
 // Route::post('/tambah-transaksi', [testController::class, 'tambahTransaksi']);
 
 // XSS example
+
 Route::post('/input-test', [testController::class, 'testInput']);
+Route::post('/upload-test', [testController::class, 'uploadFile']);
 
 
 // Last activity middleware
-Route::group(['middleware' => ['checkLastActivity']], function () {
-});
+// Route::group(['middleware' => ['checkLastActivity']], function () {
+// });

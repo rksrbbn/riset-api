@@ -6,10 +6,12 @@ use App\Models\logServiceModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Validator;
 
 class testController extends Controller
 {
-    public function getTransaksi (Request $request) {
+    public function getTransaksi (Request $request) 
+    {
 
         $data = $this->curl_get(env('THIRD_API_URL') . 'daftar-transaksi');
         $status = $data['code'];
@@ -41,14 +43,62 @@ class testController extends Controller
 
     }
 
-    public function testInput(Request $request) {
-        $nama = $request->input('nama'); // gunakan fungsi e() untuk escape html character
-        $response = "Halo, " . $nama; // Data $nama disisipkan langsung ke dalam respons API
-
+    public function testInput(Request $request) 
+    {
+        $nama = $request->input('nama'); // gunakan fungsi e() atau strip_tags() untuk escape html character
+        // dd($nama);
+        // $response = "Halo, " . $nama; 
+        $response = $nama;
         return response()->json(['message' => $response]);
     }
 
-    public function tambahTransaksi (Request $request) {
+    public function uploadFile(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|mimes:pdf,doc,docx,xls,xlsx|max:2048' // Validasi tipe file dan ukuran maksimal
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400); // Mengirimkan response error jika validasi gagal
+        }
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = $file->getClientOriginalName(); 
+    
+            // Membaca isi file
+            $content = file_get_contents($file->getRealPath());
+            $validasi_content = strtolower($content);
+
+            // Melakukan validasi terhadap adanya script HTML atau JavaScript
+            if ( preg_match( '/<script\b[^>]*>(.*?)<\/script>/is', $content ) ) 
+            {
+                return response()->json(['error' => 'File berisi script HTML atau JavaScript'], 400);
+            }
+            elseif ( strpos( $validasi_content, 'script' ) !== FALSE)
+            {
+                return response()->json(['error' => 'File berisi script HTML atau JavaScript'], 400);
+            }
+            elseif ( strpos( $validasi_content, 'javascript' ) !== FALSE)
+            {
+                return response()->json(['error' => 'File berisi script HTML atau JavaScript'], 400);
+            }
+            elseif ( strpos( $validasi_content, 'alert' ) !== FALSE)
+            {
+                return response()->json(['error' => 'File berisi script HTML atau JavaScript'], 400);
+            }
+
+            // upload
+            $file->move('public/files', $fileName);
+    
+            
+    
+            return response()->json(['message' => 'File berhasil diunggah']);
+        }
+    }
+
+    public function tambahTransaksi (Request $request) 
+    {
         // Data yang akan dienkripsi
         $data = 'Halo, ini data yang akan dienkripsi';
 
@@ -82,7 +132,8 @@ class testController extends Controller
         return $out;
     }
 
-    protected function uuid() {
+    protected function uuid() 
+    {
         return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             // 32 bits for "time_low"
             mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
