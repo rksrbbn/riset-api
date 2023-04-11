@@ -3,17 +3,63 @@
 namespace App\Http\Controllers;
 
 use App\Models\logServiceModel;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Contracts\Encryption\Encrypter;
 
 class testController extends Controller
 {
+    protected $encrypter;
+
+    public function __construct(Encrypter $encrypter)
+    {
+        $this->encrypter = $encrypter;
+    }
+
+    public function encryptData($data)
+    {
+        return $this->encrypter->encrypt($data);
+    }
+
+    public function decryptData($encryptedData)
+    {
+        try {
+            return $this->encrypter->decrypt($encryptedData);
+        } catch (DecryptException $e) {
+            // Handle error ketika gagal mendekripsi data
+            return null;
+        }
+    }
+
+    public function exampleApiMethod(Request $request)
+    {
+        $param = $request->all();
+
+        // Mengenkripsi data
+        $encryptedParam = $this->encryptData($param);
+        // dd($encryptedParam);
+
+        // Mengirimkan data yang dienkripsi ke API
+
+        // Menerima data yang dienkripsi dari API
+        
+        // Mendekripsi data
+        $decryptedParam = $this->decryptData($encryptedParam);
+        // dd($decryptedParam);
+
+        // Menggunakan data yang telah didekripsi
+
+        // $data = User::select('name', 'email')->where('name', $decryptedParam['nama'])->first();
+        // return response()->json(['data' => $data], 200);
+    }
+
     public function getTransaksi (Request $request) 
     {
-
-        $data = $this->curl_get(env('THIRD_API_URL') . 'daftar-transaksi');
+        $data = $this->curl_get(env('THIRD_API_URL', 'http://localhost:8080/api/') . 'daftar-transaksi');
         $status = $data['code'];
         $data = json_decode($data['response'], true);
 
@@ -39,8 +85,6 @@ class testController extends Controller
 
 
         return response()->json($response, $status);
-
-
     }
 
     public function testInput(Request $request) 
@@ -99,17 +143,41 @@ class testController extends Controller
 
     public function tambahTransaksi (Request $request) 
     {
-        // Data yang akan dienkripsi
-        $data = 'Halo, ini data yang akan dienkripsi';
-
-        // Kunci enkripsi
-        $key = 'Kunci Rahasia'; // Ganti dengan kunci rahasia yang lebih kuat
-        $iv = random_bytes(16);
+        $param = $request->all();
         // Mengenkripsi data
-        $encrypted_data = openssl_encrypt($data, 'AES-256-CBC', $key, 0, $iv);
+        $encryptedParam = $this->encryptData($param);
+        $postData = array(
+            'params' => $encryptedParam
+        );
+        // $postData = $param;
+        // dd($postData);
+        
+        $data = $this->curl_post_request(env('THIRD_API_URL', 'http://localhost:8080/api/') . 'tambah-transaksi', $postData);
+        $status = $data['code'];
+        $data = json_decode($data['response'], true);
 
-        // Menampilkan data terenkripsi
-        echo 'Data Terenkripsi: ' . $encrypted_data;
+        $response = array(
+            'success' => true,
+            'response_code' => $status,
+            'response' => $data
+        );
+
+        // input ke log service
+        $paramsLog = array(
+            'id' => $this->uuid(),
+            'ip_address' => $request->ip(),
+            'service_name' => 'tambah daftar transaksi',
+            'response' => json_encode($data),
+            'parameter' => '',
+            'keterangan' => $status == 200 ? 'berhasil' : 'gagal',
+            'date_time' => Carbon::now()->setTimezone('Asia/Jakarta')
+        );
+        // dd($paramsLog); 
+        
+        $log = logServiceModel::create($paramsLog);
+
+
+        return response()->json($response, $status);
 
     }
 
@@ -124,6 +192,31 @@ class testController extends Controller
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_VERBOSE, 0);
+        $response = curl_exec($curl);
+        $info = curl_getinfo($curl);
+        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        $out = ['code' => $status_code, 'response' => $response];
+        return $out;
+    }
+
+    protected function curl_post_request($urlRequest, $postData, $headers = array())
+    {
+        $curl = curl_init($urlRequest);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
+        curl_setopt($curl, CURLOPT_VERBOSE, true);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_URL, $urlRequest);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+        curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($curl, CURLOPT_SSLVERSION, 6);
+        curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.17 (KHTML, like Gecko) curlrome/24.0.1312.52 Safari/537.17');
+        curl_setopt($curl, CURLOPT_AUTOREFERER, true);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($curl, CURLOPT_VERBOSE, 1);
         $response = curl_exec($curl);
         $info = curl_getinfo($curl);
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
