@@ -24,11 +24,11 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::prefix('auth')->group(function ($router) {
+Route::group(['prefix' => 'auth'],function ($router) {
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::post('/register', [RegisteredUserController::class, 'store']);
 });
-
 
 // File
 Route::prefix('dokumen')->group(function ($router) {

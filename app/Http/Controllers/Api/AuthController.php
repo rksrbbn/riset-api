@@ -29,6 +29,14 @@ class AuthController extends Controller
         {
             return response()->json(['message'=>'email/password salah!'], 400);
         }
+        
+        if ($user->logged_in != 0)
+        {
+            return response()->json(['message'=>'pengguna sudah login'], 400);
+        }
+
+        // update status login
+        User::where('email', $request->email)->update(['logged_in' => 1]);
 
         // IP Location tidak bekerja di Localhost
         // USA IP Address
@@ -51,11 +59,19 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('access_token');
-        // dd($token);
+        
         return response()->json([
             'token' => $token->plainTextToken
         ]);
     }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete(); // Menghapus token saat logout
+        User::where('id', $request->user()->id)->update(['logged_in' => 0]);
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
 
     private function getUserOperatingSystem($userAgent)
     {
